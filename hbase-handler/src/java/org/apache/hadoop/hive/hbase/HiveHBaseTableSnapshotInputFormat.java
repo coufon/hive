@@ -18,12 +18,13 @@
 
 package org.apache.hadoop.hive.hbase;
 
+import static org.apache.hadoop.hive.hbase.ProtobufUtil.toScan;
+
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapred.TableSnapshotInputFormat;
-import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.InputFormat;
@@ -50,7 +51,7 @@ public class HiveHBaseTableSnapshotInputFormat
   // using mapreduce version of the APIs. rather than mapred
   // Copied from HBase's TableMapreduceUtil since it is not public API
   static String convertScanToString(Scan scan) throws IOException {
-    ClientProtos.Scan proto = ProtobufUtil.toScan(scan);
+    ClientProtos.Scan proto = toScan(scan);
     return Base64.getEncoder().encodeToString(proto.toByteArray());
   }
 

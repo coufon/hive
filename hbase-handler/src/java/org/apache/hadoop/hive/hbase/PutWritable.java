@@ -17,37 +17,44 @@
  */
 
 package org.apache.hadoop.hive.hbase;
+
+import static org.apache.hadoop.hbase.protobuf.ProtobufUtil.toPut;
+import static org.apache.hadoop.hive.hbase.ProtobufUtil.toMutationNoData;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-
+import java.util.Map;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellScanner;
 import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.KeyValueUtil;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos;
+import org.apache.hadoop.hbase.protobuf.generated.ClientProtos.MutationProto;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos.MutationProto.MutationType;
+import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos;
 import org.apache.hadoop.io.Writable;
 
 public class PutWritable implements Writable {
 
   private Put put;
 
-  public PutWritable() {
+  public PutWritable() {}
 
-  }
   public PutWritable(Put put) {
     this.put = put;
   }
+
   public Put getPut() {
     return put;
   }
+
   @Override
-  public void readFields(final DataInput in)
-  throws IOException {
+  public void readFields(final DataInput in) throws IOException {
     ClientProtos.MutationProto putProto = ClientProtos.MutationProto.parseDelimitedFrom(DataInputInputStream.from(in));
     int size = in.readInt();
     if(size < 0) {
@@ -57,12 +64,13 @@ public class PutWritable implements Writable {
     for (int i = 0; i < kvs.length; i++) {
       kvs[i] = KeyValue.create(in);
     }
-    put = ProtobufUtil.toPut(putProto, CellUtil.createCellScanner(kvs));
+    put = toPut(putProto, CellUtil.createCellScanner(kvs));
   }
+
   @Override
-  public void write(final DataOutput out)
-  throws IOException {
-    ProtobufUtil.toMutationNoData(MutationType.PUT, put).writeDelimitedTo(DataOutputOutputStream.from(out));
+  public void write(final DataOutput out) throws IOException {
+    toMutationNoData(
+      MutationType.PUT, put, MutationProto.newBuilder(), HConstants.NO_NONCE).writeDelimitedTo(DataOutputOutputStream.from(out));
     out.writeInt(put.size());
     CellScanner scanner = put.cellScanner();
     while(scanner.advance()) {
